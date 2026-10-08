@@ -20,6 +20,7 @@ import { buildLogisticsNet } from './kr/semanticNet.js';
 import { InferenceEngine } from './kr/expertSystem.js';
 import { DISPATCH_RULES } from './kr/dispatchRules.js';
 import { FolKB, atom, parseRule } from './kr/fol.js';
+import { blockedPlaces } from './core/routeOptions.js';
 
 const clock = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -74,7 +75,7 @@ export function permittedVehicles(world, delivery, advice) {
 }
 
 /** Stage 6: all-pairs route costs between depot and delivery points using a search algorithm. */
-export function buildMatrix(graph, points, algorithm = 'astar', weight = 'distance') {
+export function buildMatrix(graph, points, algorithm = 'astar', weight = 'distance', blocked = null) {
   const algo = ALGORITHMS[algorithm];
   const n = points.length;
   const dist = Array.from({ length: n }, () => new Array(n).fill(0));
@@ -86,7 +87,7 @@ export function buildMatrix(graph, points, algorithm = 'astar', weight = 'distan
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
       if (i === j) { paths[i][j] = [points[i]]; continue; }
-      const problem = graph.routeProblem(points[i], points[j], { weight });
+      const problem = graph.routeProblem(points[i], points[j], { weight, blocked });
       const res = algo.run(problem, { goal: points[j] });
       searches++;
       expanded += res.expanded;
@@ -176,9 +177,18 @@ export function planRoutes(world = buildWorld(), { algorithm = 'astar', weight =
   // Stage 3: expert system.
   const advice = adviseAll(world);
 
-  // Stage 6 (computed early - the CSP needs travel times).
+  // Stage 6 (computed early - the CSP needs travel times). Vehicles with access
+  // restrictions (trucks and narrow lanes) get their own matrix that avoids those places.
   const points = [DEPOT, ...new Set(deliveries.map((d) => d.node))];
-  const matrix = buildMatrix(graph, points, algorithm, weight);
+  const matrices = new Map();
+  const matrixOf = new Map();
+  for (const v of vehicles) {
+    const blocked = blockedPlaces(graph, world.net, v.type);
+    const key = [...blocked].sort().join(',');
+    if (!matrices.has(key)) matrices.set(key, buildMatrix(graph, points, algorithm, weight, blocked.size ? blocked : null));
+    matrixOf.set(v.id, matrices.get(key));
+  }
+  const matrix = matrices.get('') || [...matrices.values()][0];
 
   // Stage 4: first-order logic feasibility over all vehicle/delivery pairs.
   const kb = new FolKB();
@@ -192,7 +202,7 @@ export function planRoutes(world = buildWorld(), { algorithm = 'astar', weight =
     kb.tell(atom('WindowEnd', d.id, d.window[1]));
     for (const v of permittedVehicles(world, d, advice[d.id])) kb.tell(atom('Permitted', v.id, d.id));
     for (const v of vehicles) {
-      const direct = matrix.time[0][points.indexOf(d.node)] / frames.get(v.id, 'speedFactor');
+      const direct = matrixOf.get(v.id).time[0][points.indexOf(d.node)] / frames.get(v.id, 'speedFactor');
       kb.tell(atom('DirectTime', v.id, d.id, r1(direct)));
     }
   }
@@ -212,7 +222,7 @@ export function planRoutes(world = buildWorld(), { algorithm = 'astar', weight =
   const routeFor = (vehId, ids) => {
     const key = `${vehId}|${[...ids].sort().join(',')}`;
     if (!routeCache.has(key)) {
-      routeCache.set(key, sequenceStops(matrix, ids.map((i) => byId[i]), frames.get(vehId, 'speedFactor'), { exact }));
+      routeCache.set(key, sequenceStops(matrixOf.get(vehId), ids.map((i) => byId[i]), frames.get(vehId, 'speedFactor'), { exact }));
     }
     return routeCache.get(key);
   };
@@ -236,7 +246,20 @@ export function planRoutes(world = buildWorld(), { algorithm = 'astar', weight =
       return [...values].sort((a, b) => cost(a) - cost(b));
     },
   };
-  const cspResult = solveCSP(csp, { forwardChecking: true, mrv: true });
+  // Enumerate every consistent assignment (the domains are small after knowledge-based
+  // filtering) and keep the one with the least total driving distance.
+  const all = solveCSP(csp, { forwardChecking: true, mrv: true, maxSolutions: Infinity });
+  const planDistance = (sol) => vehicles.reduce((sum, v) => {
+    const ids = assignedTo(sol, v.id);
+    return sum + (ids.length ? routeFor(v.id, ids).distance : 0);
+  }, 0);
+  let best = null;
+  let bestDist = Infinity;
+  for (const sol of all.solutions) {
+    const d = planDistance(sol);
+    if (d < bestDist - 1e-9) { bestDist = d; best = sol; }
+  }
+  const cspResult = { ...all, solution: best, solutionsChecked: all.solutions.length, solutions: undefined };
 
   // Stage 7: sequence each vehicle's stops and expand to full road paths.
   const routes = [];
@@ -245,10 +268,11 @@ export function planRoutes(world = buildWorld(), { algorithm = 'astar', weight =
       const ids = assignedTo(cspResult.solution, v.id);
       if (!ids.length) continue;
       const seq = routeFor(v.id, ids);
+      const vm = matrixOf.get(v.id);
       const nodes = [DEPOT, ...seq.order.map((s) => s.node), DEPOT];
       const roadPath = [DEPOT];
       for (let i = 1; i < nodes.length; i++) {
-        roadPath.push(...matrix.paths[points.indexOf(nodes[i - 1])][points.indexOf(nodes[i])].slice(1));
+        roadPath.push(...vm.paths[points.indexOf(nodes[i - 1])][points.indexOf(nodes[i])].slice(1));
       }
       const load = ids.reduce((s, k) => s + byId[k].demand, 0);
       routes.push({
@@ -256,6 +280,7 @@ export function planRoutes(world = buildWorld(), { algorithm = 'astar', weight =
         stops: seq.order.map((s) => s.id),
         arrivals: seq.arrivals,
         roadPath,
+        geometry: graph.pathGeometry(roadPath),
         distance: seq.distance,
         finish: seq.finish,
         load,
@@ -266,8 +291,12 @@ export function planRoutes(world = buildWorld(), { algorithm = 'astar', weight =
     }
   }
 
+  const summary = summarise(routes, { expanded: [...matrices.values()].reduce((a, m) => a + m.expanded, 0), searches: [...matrices.values()].reduce((a, m) => a + m.searches, 0) }, deliveries, clock() - t0, world, advice);
+  const reasons = cspResult.solution ? assignmentReasons(world, advice, domains, cspResult.solution, routes, routeFor) : {};
+
   return {
     method: `${ALGORITHMS[algorithm].name} + KB + CSP + TSP`,
+    reasons,
     advice,
     domains,
     kb,
@@ -276,8 +305,49 @@ export function planRoutes(world = buildWorld(), { algorithm = 'astar', weight =
     csp: cspResult,
     matrix,
     routes,
-    summary: summarise(routes, matrix, deliveries, clock() - t0, world, advice),
+    summary,
   };
+}
+
+/** Plain-language reason for each delivery's vehicle, from the expert-system rules and the route costs. */
+function assignmentReasons(world, advice, domains, solution, routes, routeFor) {
+  const { graph, deliveries, vehicles } = world;
+  const label = (id) => vehicles.find((v) => v.id === id).label;
+  const out = {};
+  for (const d of deliveries) {
+    const a = advice[d.id];
+    const fired = new Set(a.run.fired);
+    const why = [];
+    if (fired.has('R2')) why.push('It is perishable, so it needs a refrigerated van.');
+    if (fired.has('R3')) why.push('It weighs over 300 kg, so only a truck can carry it.');
+    else if (fired.has('R4')) why.push('Bulk goods need a truck.');
+    if (fired.has('R7')) why.push('It is fragile, so it cannot go by truck or bike.');
+    if (fired.has('R6')) why.push(`${graph.node(d.node).name} has narrow lanes, so trucks cannot go there.`);
+    if (fired.has('R8')) why.push('Small document parcels go by bike.');
+    const chosen = solution[d.id];
+    const options = domains[d.id];
+    if (options.length > 1) {
+      const mine = routes.find((r) => r.vehicle.id === chosen);
+      const without = mine.stops.filter((x) => x !== d.id);
+      const saving = mine.distance - routeFor(chosen, without).distance;
+      const alts = options.filter((v) => v !== chosen).map((v) => {
+        const theirs = routes.find((r) => r.vehicle.id === v)?.stops || [];
+        const load = [...theirs, d.id].reduce((s, x) => s + deliveries.find((y) => y.id === x).demand, 0);
+        if (load > world.frames.get(v, 'capacity')) return `${label(v)} would be over capacity`;
+        const r = routeFor(v, [...theirs, d.id]);
+        if (!r.feasible) return `${label(v)} would arrive too late somewhere`;
+        const extra = r.distance - routeFor(v, theirs).distance;
+        return `${label(v)} would add ${extra.toFixed(1)} km`;
+      });
+      const own = saving < 0.05 ? `${label(chosen)} passes this stop anyway, so it adds no extra distance` : `${label(chosen)} adds ${saving.toFixed(1)} km`;
+      why.push(`${own}. ${alts.join('; ')}.`);
+    } else if (!why.length) {
+      why.push(`Only ${label(chosen)} can take it.`);
+    }
+    if (fired.has('R9')) why.push('Urgent: high priority with an early deadline.');
+    out[d.id] = why;
+  }
+  return out;
 }
 
 function summarise(routes, matrix, deliveries, timeMs, world, advice) {
@@ -352,6 +422,7 @@ export function planBaseline(world = buildWorld(), { algorithm = 'bfs' } = {}) {
       feasible: arrivals.every((a) => a.late === 0) && load <= frames.get(v.id, 'capacity'),
     };
   });
+  for (const r of routes) r.geometry = graph.pathGeometry(r.roadPath);
   return {
     method: `${ALGORITHMS[algorithm].name} baseline (no KB / CSP)`,
     routes,
