@@ -89,7 +89,7 @@ tests/, scripts/        tests, benchmark, data builder
 | Review | Progress | Covered |
 |---|---|---|
 | Review 1 | 30% | Problem study, Modules 1 and 2 concepts, literature |
-| **Review 2** | **50%** | Working app: search, CSP, TSP, Module 2 problems, Module 3 knowledge base and expert system |
+| **Review 2** | **60%** | Working app: search, CSP, TSP, Module 2 problems, Module 3 knowledge base and expert system |
 | Final | 100% | Module 4 (Bayesian traffic model, fuzzy urgency, certainty factors), bigger network, re-routing, final report |
 
 ## Team

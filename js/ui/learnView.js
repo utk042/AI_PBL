@@ -32,7 +32,7 @@ const TEAM = [
 ];
 
 function status() {
-  const pct = 50;
+  const pct = 60;
   return h('div', { class: 'doc' },
     h('h2', {}, 'Project status'),
     h('p', {}, 'Logistics Route Optimization System · AI PBL, Group 101 · CCSAI0301'),
