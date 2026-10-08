@@ -6,7 +6,7 @@
 - Collected sample road data and sketched the graph.
 - Feedback: "Showed excellent understanding of the project domain and answered questions with confidence. Presentation was clear, well-structured, and communicated the project effectively."
 
-## Review 2 (Month 2): 50%
+## Review 2 (Month 2): 60%
 - Real road network: 26 Greater Noida places, 49 roads from OpenStreetMap.
 - Search engine with seven algorithms; A* route options for time, distance, cost, fare and a balanced mix; alternatives with Yen's algorithm.
 - CSP for order-to-vehicle assignment; TSP with time windows for stop order.

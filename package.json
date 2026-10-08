@@ -1,6 +1,6 @@
 {
   "name": "logistics-route-optimizer",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "AI PBL - Logistics Route Optimization System (search, CSP, TSP, knowledge representation and expert system)",
   "type": "module",
   "private": true,

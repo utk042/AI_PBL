@@ -89,18 +89,18 @@ tests/, scripts/        tests, benchmark, data builder
 | Review | Progress | Covered |
 |---|---|---|
 | Review 1 | 30% | Problem study, Modules 1 and 2 concepts, literature |
-| **Review 2** | **50%** | Working app: search, CSP, TSP, Module 2 problems, Module 3 knowledge base and expert system |
+| **Review 2** | **60%** | Working app: search, CSP, TSP, Module 2 problems, Module 3 knowledge base and expert system |
 | Final | 100% | Module 4 (Bayesian traffic model, fuzzy urgency, certainty factors), bigger network, re-routing, final report |
 
 ## Team
 
 | Name | Roll no. | Worked on |
 |---|---|---|
-| Utkarsh Raj Shukla | 2501330100398 | Road graph, uninformed search, Water-Jug, Missionaries-Cannibals, integration |
-| Vivek Kumar | 2501330100414 | A*, greedy search, heuristics, 8-puzzle, TSP |
-| Vishal Gupta | 2501330100411 | CSP solver, N-Queens, propositional and first-order logic |
-| Yash Srivastava | 2501330100422 | Multi-vehicle planning, semantic network, frames, benchmarks |
-| Nishant Kumar Mahto | 0261DCS009 | Interface, map, expert-system screen |
+| Utkarsh Raj Shukla | 2501330100398 | Web app and map, road data, search algorithms, route options, testing, GitHub |
+| Vivek Kumar | 2501330100414 | 8-puzzle, checking A* heuristics |
+| Vishal Gupta | 2501330100411 | N-Queens, propositional and first-order logic rules |
+| Yash Srivastava | 2501330100422 | Delivery planner (CSP), semantic network and frames |
+| Nishant Kumar Mahto | 0261DCS009 | Water-Jug, app testing, report |
 
 ## References
 
