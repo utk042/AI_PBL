@@ -25,7 +25,7 @@ function segmented(items, value, onPick, cls = '') {
 export function renderRoute(root, { world }) {
   const { graph, net, frames } = world;
   const places = [...graph.nodes.values()].sort((a, b) => a.name.localeCompare(b.name));
-  const st = { from: 'N0', to: 'N24', vehicle: 'Van', goal: 'fastest', selected: 0 };
+  const st = { from: 'N22', to: 'N15', vehicle: 'Van', goal: 'fastest', selected: null };
 
   const placeSelect = (key) => {
     const el = h('select', { 'aria-label': key === 'from' ? 'Start' : 'Destination', onchange: (e) => { st[key] = e.target.value; update(); } },
