@@ -8,7 +8,7 @@ export function renderExpert(root, { world }) {
   const { engine, graph } = world;
   const zones = [...new Set([...graph.nodes.values()].map((n) => n.zone))];
   const st = { ...deliveryFacts(world, world.deliveries[0]), node: world.deliveries[0].node };
-  const out = h('div');
+  const out = h('div', { class: 'grid halves' });
   const formBox = h('div');
   const goalBox = h('div');
 
@@ -53,7 +53,7 @@ export function renderExpert(root, { world }) {
         h('h3', {}, 'Explanation - WHY was each rule used?'),
         h('ul', { class: 'steps' }, res.fired.map((id) => h('li', {}, explainWhy(DISPATCH_RULES.find((r) => r.id === id))))),
       ),
-      card('Inference engine trace (match → resolve → act)', 'Each cycle builds the conflict set of rules whose conditions match working memory, picks the highest-salience rule, and fires it once (refractoriness).',
+      card('Inference steps', 'In each cycle the engine lists the rules that match, fires the one with the highest priority, and adds its conclusion to working memory.',
         table(['Cycle', 'Conflict set', 'Fired', 'Added to working memory'], res.cycles.map((c) => [c.cycle, c.conflictSet.join(', '), pill(c.fired), c.added.join('; ')])),
         h('h3', {}, 'Final working memory'),
         table(['Attribute', 'Value', 'Source'], res.wm.facts.map((f) => [f.attr, String(f.value), f.by])),
@@ -72,7 +72,7 @@ export function renderExpert(root, { world }) {
   run();
 
   root.append(
-    card('Expert system: Dispatch Advisor (Module 3)', 'Decides which vehicle classes may carry a delivery and when it should leave. Its output feeds the CSP domains in the Route Planner.',
+    card('Dispatch advisor', 'Enter an order and the advisor decides which kinds of vehicle may carry it. The delivery planner uses the same rules.',
       h('div', { class: 'arch' },
         h('div', {}, h('b', {}, 'User interface'), h('br'), 'This form: the dispatcher enters the order facts.'),
         h('div', {}, h('b', {}, 'Working memory'), h('br'), 'Facts about the current order plus every conclusion derived.'),
@@ -83,8 +83,8 @@ export function renderExpert(root, { world }) {
       ),
       h('h3', {}, 'Order facts'), formBox,
     ),
-    h('div', { class: 'grid halves' }, out),
-    card('Goal-driven reasoning', 'Backward chaining starts from a goal and works back to the input facts.', goalBox),
+    out,
+    card('Goal-driven reasoning', 'Backward chaining: start from a conclusion and check whether the facts support it.', goalBox),
     card('Knowledge base rules', null,
       table(['Rule', 'Name', 'IF', 'THEN', 'Salience'], DISPATCH_RULES.map((r) => [r.id, r.name, r.if.map(showCondition).join(' AND '), r.then.map(showAction).join('; '), r.salience]), { numeric: [4] })),
   );

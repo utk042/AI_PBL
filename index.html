@@ -3,40 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Logistics Route Optimizer</title>
-  <meta name="description" content="AI PBL - Logistics Route Optimization System: search, CSP, TSP, knowledge representation and an expert-system dispatch advisor.">
+  <title>Greater Noida Route Planner</title>
+  <meta name="description" content="Find the best route across Greater Noida by time, distance, cost or fare, and plan a day of deliveries for a small fleet.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
   <header class="top">
-    <div class="brand">
-      <h1>Logistics Route Optimization System</h1>
-      <span class="tag">AI PBL · Group 101 · SDG 9</span>
-      <span class="spacer"></span>
-      <button class="btn ghost" id="theme-toggle" type="button">Toggle theme</button>
-    </div>
-    <nav class="tabs" id="tabs">
-      <button data-view="overview" class="active">Overview</button>
-      <button data-view="planner">Route Planner</button>
-      <button data-view="search">Search Lab</button>
-      <button data-view="problems">Classic Problems</button>
-      <button data-view="kb">Knowledge Base</button>
-      <button data-view="expert">Expert System</button>
+    <a class="brand" href="#route">Route Planner <span>Greater Noida</span></a>
+    <nav id="tabs" aria-label="Main">
+      <a href="#route" data-view="route">Route</a>
+      <a href="#deliveries" data-view="deliveries">Deliveries</a>
+      <a href="#how" data-view="how">How it works</a>
     </nav>
   </header>
 
   <main>
-    <section class="view active" id="view-overview"></section>
-    <section class="view" id="view-planner"></section>
-    <section class="view" id="view-search"></section>
-    <section class="view" id="view-problems"></section>
-    <section class="view" id="view-kb"></section>
-    <section class="view" id="view-expert"></section>
+    <section class="view" id="view-route"></section>
+    <section class="view" id="view-deliveries"></section>
+    <section class="view" id="view-how"></section>
   </main>
 
-  <footer>Course CCSAI0301 Artificial Intelligence · Faculty: Dr. Mohd. Nazim · BTech CSE-F · NIET Greater Noida</footer>
-
-  <noscript><p style="text-align:center">This demo needs JavaScript enabled.</p></noscript>
+  <noscript><p class="noscript">This page needs JavaScript.</p></noscript>
   <script type="module" src="js/ui/app.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 import { h, card, table, select, field, fmt, pill, subtabs, stat } from './dom.js';
-import { drawMap, legend } from './map.js';
+import { createMap, COLORS } from './mapView.js';
 import { bfs, dfs, iddfs, astar } from '../core/search.js';
 import { waterJugProblem } from '../problems/waterJug.js';
 import { missionariesProblem } from '../problems/missionaries.js';
@@ -27,7 +27,7 @@ function waterJug() {
     );
   };
   run();
-  return card('Water-Jug problem', 'State (a, b) = litres in jug A and jug B. Operators: fill, empty, pour. Project link: splitting a load between two vehicles of fixed capacity uses the same state-space formulation.',
+  return card('Water-Jug problem', 'Measure an exact amount of water with two jugs. The state is how much is in each jug; the moves are fill, empty and pour. Splitting a load between two vehicles is the same kind of problem.',
     h('div', { class: 'controls' },
       field('Jug A capacity', num(st.a, 1, 20, (e) => { st.a = +e.target.value || 1; run(); })),
       field('Jug B capacity', num(st.b, 1, 20, (e) => { st.b = +e.target.value || 1; run(); })),
@@ -53,7 +53,7 @@ function missionaries() {
     );
   };
   run();
-  return card('Missionaries and Cannibals', 'State (M, C, boat) on the left bank. Unsafe states (missionaries outnumbered) are rejected before they enter the frontier - the same early-rejection idea the CSP uses for capacity violations.',
+  return card('Missionaries and Cannibals', 'Get everyone across the river without missionaries ever being outnumbered. Unsafe states are thrown away straight away, the same way the planner drops overloaded vehicles early.',
     h('div', { class: 'controls' },
       field('Missionaries = Cannibals', num(st.n, 1, 6, (e) => { st.n = +e.target.value || 3; run(); })),
       field('Boat capacity', num(st.boat, 1, 4, (e) => { st.boat = +e.target.value || 2; run(); })),
@@ -82,7 +82,7 @@ function puzzle() {
     st.step = 0;
     out.replaceChildren(
       table(['Algorithm', 'Moves', 'Expanded', 'Generated', 'Time (ms)'], rows.map(([n, r]) => [n, r.actions.length, r.expanded, r.generated, fmt(r.timeMs, 1)]), { numeric: [1, 2, 3, 4] }),
-      h('p', { class: 'muted' }, 'All three return the same optimal number of moves; the better-informed admissible heuristic (Manhattan ≥ misplaced) expands far fewer states. This validated our A* before using it on the road network.'),
+      h('p', { class: 'muted' }, 'All three find the shortest solution. Manhattan distance is the better guess, so A* checks far fewer states with it.'),
     );
     showStep();
   };
@@ -106,7 +106,7 @@ function puzzle() {
   };
 
   run();
-  return card('8-puzzle (tiles problem)', `Goal ${GOAL.replace('0', '_')}. Heuristics h₁ (misplaced tiles) and h₂ (Manhattan distance) are both admissible.`,
+  return card('8-puzzle (tiles problem)', 'Slide the tiles back into order. We used this to test A* before using it on roads: the better the guess (heuristic), the fewer states A* has to check.',
     h('div', { class: 'controls' },
       h('button', { class: 'btn', onclick: () => { st.start = scramble(10 + Math.floor(Math.random() * 30), Math.floor(Math.random() * 1e6)); run(); } }, 'New scramble'),
     ),
@@ -139,13 +139,14 @@ function queens() {
     );
   };
   run();
-  return card('N-Queens as a CSP', 'Variables: columns. Domain: rows. Constraints: no two queens share a row or diagonal. Solved by the same CSP engine that assigns deliveries to vehicles.',
+  return card('N-Queens as a CSP', 'Place N queens so that none can attack another. It is solved by the same constraint solver that assigns orders to vehicles.',
     h('div', { class: 'controls' }, field('N', num(st.n, 1, 30, (e) => { st.n = Math.min(30, Math.max(1, +e.target.value || 8)); run(); }))), out);
 }
 
 function tsp(world) {
   const out = h('div');
-  const mapBox = h('div');
+  const mapBox = h('div', { class: 'map map-small' });
+  let tspMap = null;
   const st = { count: 8 };
   const run = () => {
     const nodes = [DEPOT, ...new Set(world.deliveries.map((d) => d.node))].slice(0, st.count + 1);
@@ -158,30 +159,36 @@ function tsp(world) {
     ];
     const opt = Math.min(...solvers.map((x) => x.length));
     const expand = (tour) => tour.slice(1).reduce((acc, j, k) => [...acc, ...m.paths[tour[k]][j].slice(1)], [nodes[tour[0]]]);
-    const colors = ['#2357d9', '#1b8a5a', '#d9480f'];
-    const drawn = solvers.slice(-3);
-    mapBox.replaceChildren(
-      drawMap(world.graph, { deliveries: world.deliveries.filter((d) => nodes.includes(d.node)), routes: drawn.map((x, i) => ({ path: expand(x.tour), color: colors[i], dashed: i > 0 })) }),
-      legend(drawn.map((x, i) => [x.name, colors[i]])),
-    );
+    const shown = [solvers.find((x) => x.name.startsWith('Held')), solvers.find((x) => x.name === 'Nearest neighbour')];
+    requestAnimationFrame(() => {
+      tspMap ||= createMap(mapBox, world.graph);
+      tspMap.setRoutes([
+        { coords: world.graph.pathGeometry(expand(shown[1].tour)), color: COLORS[1], weight: 5, dashed: true },
+        { coords: world.graph.pathGeometry(expand(shown[0].tour)), color: COLORS[0], weight: 5 },
+      ]);
+      tspMap.setPins([{ id: DEPOT, kind: 'depot', text: 'D' }, ...shown[0].tour.slice(1, -1).map((i, k) => ({ id: nodes[i], kind: 'stop', text: k + 1, color: COLORS[0] }))]);
+      tspMap.fit([world.graph.pathGeometry(expand(shown[0].tour))]);
+    });
     out.replaceChildren(
       table(['Solver', 'Tour length (km)', 'Gap to optimum', 'Evaluations', 'Time (ms)'], solvers.map((x) => [x.name, fmt(x.length), x.length - opt < 1e-6 ? pill('optimal', 'ok') : pill(`+${fmt(((x.length - opt) / opt) * 100)}%`, 'warn'), x.evaluated, fmt(x.timeMs, 2)]), { numeric: [1, 3, 4] }),
-      h('p', { class: 'muted mono' }, `Optimal order: ${solvers.find((x) => x.length - opt < 1e-6).tour.map((i) => nodes[i]).join(' → ')}`),
-      h('p', { class: 'muted' }, 'Distances between stops come from A* on the road network. Exact methods grow as n! (brute force) or n²·2ⁿ (Held-Karp), so the planner uses exact search for small per-vehicle stop sets and nearest neighbour + 2-opt for larger ones.'),
+      h('p', { class: 'muted' }, `Best order: ${solvers.find((x) => x.name.startsWith('Held')).tour.map((i) => world.graph.node(nodes[i]).name.split(',')[0]).join(' → ')}`),
+      h('p', { class: 'muted' }, 'Road distances between stops come from A*. Exact methods get slow very quickly as stops are added (n! for brute force), so for many stops the planner uses nearest neighbour + 2-opt.'),
     );
   };
   run();
-  return card('Travelling Salesperson Problem', 'Visit every delivery point once and return to the depot with minimum road distance.',
+  return card('Travelling Salesperson Problem', 'Visit every delivery point once and come back to the depot, driving as little as possible. The planner uses this to order each vehicle\'s stops.',
     h('div', { class: 'controls' }, field('Delivery points', select([4, 6, 8, 10, 12].map((n) => [String(n), `${n} points`]), String(st.count), (v) => { st.count = +v; run(); }))),
-    h('div', { class: 'grid halves' }, mapBox, out));
+    h('div', { class: 'grid halves' }, h('div', {}, mapBox, h('p', { class: 'muted small' }, 'Blue: best tour (Held-Karp). Orange dashed: nearest neighbour.')), out));
 }
 
 export function renderProblems(root, { world }) {
-  const panes = { jug: waterJug(), mc: missionaries(), puzzle: puzzle(), queens: queens(), tsp: tsp(world) };
-  const holder = h('div', {}, panes.jug);
+  const make = { jug: waterJug, mc: missionaries, puzzle, queens, tsp: () => tsp(world) };
+  const panes = {};
+  const holder = h('div');
+  const show = (id) => { panes[id] ||= make[id](); holder.replaceChildren(panes[id]); };
   root.append(
-    card('Classic problems (Module 2)', 'Each problem runs on the same search / CSP engine as the route planner, which is how the engine was tested before it was applied to the road network.'),
-    subtabs([['jug', 'Water-Jug'], ['queens', 'N-Queens'], ['tsp', 'Travelling Salesperson'], ['mc', 'Missionaries & Cannibals'], ['puzzle', 'Tiles (8-puzzle)']], (id) => holder.replaceChildren(panes[id])),
+    subtabs([['jug', 'Water-Jug'], ['queens', 'N-Queens'], ['tsp', 'Travelling Salesperson'], ['mc', 'Missionaries & Cannibals'], ['puzzle', 'Tiles (8-puzzle)']], show),
     holder,
   );
+  show('jug');
 }

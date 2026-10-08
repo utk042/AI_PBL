@@ -67,8 +67,8 @@ function propositional() {
   runChain();
 
   return h('div', { class: 'grid halves' },
-    card('Truth table', 'Operators: ! (¬) & (∧) | (∨) -> (→) <-> (↔). Try "Feasible <-> (WithinCapacity & WithinWindow)".', formula, ttOut),
-    card('Propositional knowledge base', 'One fact or Horn rule per line. The dispatch decision Assign is derived from the feasibility rules.', kbText, h('div', { class: 'controls' }, field('Query', query)), chainOut),
+    card('Truth table', 'Type a formula to see when it is true. Use ! for not, & for and, | for or, -> for implies.', formula, ttOut),
+    card('Propositional knowledge base', 'One fact or rule per line. Change the facts and see whether Assign can still be proved.', kbText, h('div', { class: 'controls' }, field('Query', query)), chainOut),
   );
 }
 
@@ -89,7 +89,7 @@ function firstOrder(plan) {
   run();
   const derived = plan.folTrace.filter((t) => t.fact.startsWith('Feasible') || t.fact.startsWith('Unservable'));
   return h('div', { class: 'grid halves' },
-    card('First-order rules', 'Variables (?v vehicle, ?d delivery) range over all vehicles and deliveries; built-ins le(x, y) compare numbers; ! is negation as failure.',
+    card('First-order rules', 'Rules that hold for every vehicle (?v) and every order (?d). le(x, y) means x ≤ y.',
       h('ul', { class: 'steps' }, kb.rules.map((r) => h('li', { class: 'mono' }, `${r.name}: ${showAtom(r.head)} ⇐ ${r.body.map(showAtom).join(' ∧ ')}`))),
       h('h3', {}, 'Universal check: ∀d ∃v Feasible(v, d)'),
       h('p', {}, plan.coverage.holds ? pill('holds - every delivery has at least one feasible vehicle', 'ok') : pill(`fails for ${plan.coverage.failing.join(', ')}`, 'bad')),
@@ -148,8 +148,8 @@ function semanticNet(world) {
   run();
   const nodes = [...net.nodes.keys()].filter((k) => !k.startsWith('D') || k.startsWith('Deliver') || k === 'Depot');
   return h('div', {},
-    card('Semantic network', 'Boxes are classes, rounded boxes are instances; dashed arrows are instance-of links. can-carry and cannot-enter links are omitted from the drawing for clarity but are used in queries.', svg),
-    card('Inheritance query', 'A value not stored on a node is inherited through is-a / instance-of links.',
+    card('Semantic network', 'Square boxes are kinds of things, round boxes are real vehicles. A vehicle inherits everything its kind knows.', svg),
+    card('Inheritance query', 'Pick a vehicle and a relation to see the answer and where it was inherited from.',
       h('div', { class: 'controls' },
         field('Node', select(nodes.map((n) => [n, n]), st.node, (v) => { st.node = v; run(); })),
         field('Relation', select(['can-carry', 'cannot-enter', 'starts-at', 'travels-on', 'served-by', 'located-at', 'connects'].map((r) => [r, r]), st.rel, (v) => { st.rel = v; run(); })),
@@ -175,9 +175,9 @@ function frames(world) {
   run();
   const vehicles = fs.instancesOf('Vehicle');
   return h('div', { class: 'grid halves' },
-    card('Frames', 'Each slot is filled by its own value, an if-needed procedure, an inherited value or a class default.',
+    card('Frames', 'Each vehicle and order is a frame with slots. Empty slots take the default from the parent frame.',
       h('div', { class: 'controls' }, field('Frame', select([...fs.frames.keys()].map((k) => [k, k]), st.frame, (v) => { st.frame = v; run(); }))), out),
-    card('Demons (if-added / if-needed)', 'Setting currentLoad triggers the if-added demon; remainingCapacity is computed on demand by an if-needed procedure.',
+    card('Demons (if-added / if-needed)', 'Set a load: an if-added procedure warns when the vehicle is overloaded, and remaining capacity is worked out when asked (if-needed).',
       h('div', { class: 'controls' },
         field('Vehicle', select(vehicles.map((v) => [v, v]), vehicles[0], (v) => { st.frame = v; run(); })),
         field('currentLoad (kg)', load),
@@ -193,7 +193,6 @@ export function renderKB(root, { world }) {
   const panes = { prop: propositional(), fol: firstOrder(plan), net: semanticNet(world), frames: frames(world) };
   const holder = h('div', {}, panes.prop);
   root.append(
-    card('Knowledge representation (Module 3)', 'How the system stores what it knows about vehicles, deliveries and dispatch rules.'),
     subtabs([['prop', 'Propositional logic'], ['fol', 'First-order logic'], ['net', 'Semantic network'], ['frames', 'Frames']], (id) => holder.replaceChildren(panes[id])),
     holder,
   );
