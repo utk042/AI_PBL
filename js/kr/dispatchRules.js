@@ -9,7 +9,7 @@ export const DISPATCH_RULES = [
     because: 'perishable items spoil without temperature control.',
   },
   {
-    id: 'R2', name: 'Refrigeration needs a reefer', salience: 9,
+    id: 'R2', name: 'Needs refrigerated van', salience: 9,
     if: [{ attr: 'need', op: 'has', value: 'refrigeration' }],
     then: [{ assert: 'allowed-class', value: 'RefrigeratedVan' }],
     because: 'only refrigerated vans provide cold storage.',

@@ -27,7 +27,7 @@ function waterJug() {
     );
   };
   run();
-  return card('Water-Jug problem', 'Measure an exact amount of water with two jugs. The state is how much is in each jug; the moves are fill, empty and pour. Splitting a load between two vehicles is the same kind of problem.',
+  return card('Water-Jug problem', 'Measure an exact amount of water with two jugs. The state is how much water is in each jug; the moves are fill, empty and pour.',
     h('div', { class: 'controls' },
       field('Jug A capacity', num(st.a, 1, 20, (e) => { st.a = +e.target.value || 1; run(); })),
       field('Jug B capacity', num(st.b, 1, 20, (e) => { st.b = +e.target.value || 1; run(); })),
@@ -53,7 +53,7 @@ function missionaries() {
     );
   };
   run();
-  return card('Missionaries and Cannibals', 'Get everyone across the river without missionaries ever being outnumbered. Unsafe states are thrown away straight away, the same way the planner drops overloaded vehicles early.',
+  return card('Missionaries and Cannibals', 'Get everyone across the river without the missionaries ever being outnumbered. Unsafe states are skipped.',
     h('div', { class: 'controls' },
       field('Missionaries = Cannibals', num(st.n, 1, 6, (e) => { st.n = +e.target.value || 3; run(); })),
       field('Boat capacity', num(st.boat, 1, 4, (e) => { st.boat = +e.target.value || 2; run(); })),
@@ -82,7 +82,7 @@ function puzzle() {
     st.step = 0;
     out.replaceChildren(
       table(['Algorithm', 'Moves', 'Expanded', 'Generated', 'Time (ms)'], rows.map(([n, r]) => [n, r.actions.length, r.expanded, r.generated, fmt(r.timeMs, 1)]), { numeric: [1, 2, 3, 4] }),
-      h('p', { class: 'muted' }, 'All three find the shortest solution. Manhattan distance is the better guess, so A* checks far fewer states with it.'),
+      h('p', { class: 'muted' }, 'All three find the shortest solution. A* with Manhattan distance checks the fewest states.'),
     );
     showStep();
   };
@@ -106,7 +106,7 @@ function puzzle() {
   };
 
   run();
-  return card('8-puzzle (tiles problem)', 'Slide the tiles back into order. We used this to test A* before using it on roads: the better the guess (heuristic), the fewer states A* has to check.',
+  return card('8-puzzle (tiles problem)', 'Slide the tiles back into order. We used this to test A* heuristics before using A* on the road map.',
     h('div', { class: 'controls' },
       h('button', { class: 'btn', onclick: () => { st.start = scramble(10 + Math.floor(Math.random() * 30), Math.floor(Math.random() * 1e6)); run(); } }, 'New scramble'),
     ),
@@ -139,7 +139,7 @@ function queens() {
     );
   };
   run();
-  return card('N-Queens as a CSP', 'Place N queens so that none can attack another. It is solved by the same constraint solver that assigns orders to vehicles.',
+  return card('N-Queens as a CSP', 'Place N queens so that no two attack each other. Solved with the same CSP solver that assigns orders to vehicles.',
     h('div', { class: 'controls' }, field('N', num(st.n, 1, 30, (e) => { st.n = Math.min(30, Math.max(1, +e.target.value || 8)); run(); }))), out);
 }
 
@@ -172,11 +172,11 @@ function tsp(world) {
     out.replaceChildren(
       table(['Solver', 'Tour length (km)', 'Gap to optimum', 'Evaluations', 'Time (ms)'], solvers.map((x) => [x.name, fmt(x.length), x.length - opt < 1e-6 ? pill('optimal', 'ok') : pill(`+${fmt(((x.length - opt) / opt) * 100)}%`, 'warn'), x.evaluated, fmt(x.timeMs, 2)]), { numeric: [1, 3, 4] }),
       h('p', { class: 'muted' }, `Best order: ${solvers.find((x) => x.name.startsWith('Held')).tour.map((i) => world.graph.node(nodes[i]).name.split(',')[0]).join(' → ')}`),
-      h('p', { class: 'muted' }, 'Road distances between stops come from A*. Exact methods get slow very quickly as stops are added (n! for brute force), so for many stops the planner uses nearest neighbour + 2-opt.'),
+      h('p', { class: 'muted' }, 'Distances between stops come from A*. Exact methods get slow as stops are added, so for many stops the planner uses nearest neighbour + 2-opt.'),
     );
   };
   run();
-  return card('Travelling Salesperson Problem', 'Visit every delivery point once and come back to the depot, driving as little as possible. The planner uses this to order each vehicle\'s stops.',
+  return card('Travelling Salesperson Problem', 'Visit every delivery point once and return to the depot with the least driving. The planner uses this to order each vehicle\'s stops.',
     h('div', { class: 'controls' }, field('Delivery points', select([4, 6, 8, 10, 12].map((n) => [String(n), `${n} points`]), String(st.count), (v) => { st.count = +v; run(); }))),
     h('div', { class: 'grid halves' }, h('div', {}, mapBox, h('p', { class: 'muted small' }, 'Blue: best tour (Held-Karp). Orange dashed: nearest neighbour.')), out));
 }
