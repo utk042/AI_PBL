@@ -1,0 +1,13 @@
+{
+  "name": "logistics-route-optimizer",
+  "version": "0.5.0",
+  "description": "AI PBL - Logistics Route Optimization System (search, CSP, TSP, knowledge representation and expert system)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "npx --yes http-server -c-1 -p 8080 .",
+    "test": "node tests/run-tests.js",
+    "benchmark": "node scripts/benchmark.js"
+  },
+  "license": "MIT"
+}
