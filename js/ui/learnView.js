@@ -24,11 +24,11 @@ const TODO = [
   ['User testing, final report and demo', 'Final'],
 ];
 const TEAM = [
-  ['Utkarsh Raj Shukla', '2501330100398', 'Web app and map, road data, search algorithms, route options, delivery planner, expert system, Water-Jug, Missionaries-Cannibals, testing, GitHub'],
+  ['Utkarsh Raj Shukla', '2501330100398', 'Web app and map, road data, search algorithms, route options, testing, GitHub'],
   ['Vivek Kumar', '2501330100414', '8-puzzle, checking A* heuristics'],
   ['Vishal Gupta', '2501330100411', 'N-Queens, propositional and first-order logic rules'],
-  ['Yash Srivastava', '2501330100422', 'Semantic network and frames'],
-  ['Nishant Kumar Mahto', '0261DCS009', 'Dispatch rules for the expert system, report'],
+  ['Yash Srivastava', '2501330100422', 'Delivery planner (CSP), semantic network and frames'],
+  ['Nishant Kumar Mahto', '0261DCS009', 'Water-Jug, app testing, report'],
 ];
 
 function status() {
