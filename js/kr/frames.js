@@ -80,7 +80,11 @@ export function buildLogisticsFrames(vehicles, deliveries) {
       capacity: { default: 300 },
       speedFactor: { default: 1.0 },
       refrigerated: { default: false },
+      fuelType: { default: 'diesel' },
       fuelPerKm: { default: 0.1 },
+      baseFare: { default: 80 },
+      farePerKm: { default: 16 },
+      farePerMin: { default: 1.5 },
       currentLoad: {
         default: 0,
         ifAdded: (sys, name, value) =>
@@ -90,9 +94,18 @@ export function buildLogisticsFrames(vehicles, deliveries) {
     },
   });
   fs.define('Van', { isA: 'Vehicle', slots: { capacity: { default: 300 }, fuelPerKm: { default: 0.09 } } });
-  fs.define('RefrigeratedVan', { isA: 'Van', slots: { capacity: { default: 250 }, refrigerated: { default: true }, fuelPerKm: { default: 0.11 } } });
-  fs.define('Truck', { isA: 'Vehicle', slots: { capacity: { default: 800 }, speedFactor: { default: 0.8 }, fuelPerKm: { default: 0.2 } } });
-  fs.define('Bike', { isA: 'Vehicle', slots: { capacity: { default: 20 }, speedFactor: { default: 1.2 }, fuelPerKm: { default: 0.03 } } });
+  fs.define('RefrigeratedVan', {
+    isA: 'Van',
+    slots: { capacity: { default: 250 }, refrigerated: { default: true }, fuelPerKm: { default: 0.11 }, baseFare: { default: 120 }, farePerKm: { default: 20 }, farePerMin: { default: 2 } },
+  });
+  fs.define('Truck', {
+    isA: 'Vehicle',
+    slots: { capacity: { default: 800 }, speedFactor: { default: 0.8 }, fuelPerKm: { default: 0.2 }, baseFare: { default: 250 }, farePerKm: { default: 28 }, farePerMin: { default: 2.5 } },
+  });
+  fs.define('Bike', {
+    isA: 'Vehicle',
+    slots: { capacity: { default: 20 }, speedFactor: { default: 1.2 }, fuelType: { default: 'petrol' }, fuelPerKm: { default: 0.025 }, baseFare: { default: 20 }, farePerKm: { default: 8 }, farePerMin: { default: 0.5 } },
+  });
 
   fs.define('Delivery', {
     slots: {
