@@ -1,108 +1,113 @@
 # Logistics Route Optimization System
 
-AI Project-Based Learning (PBL) · Course **CCSAI0301 Artificial Intelligence** · BTech CSE-F · NIET Greater Noida
-Faculty: **Dr. Mohd. Nazim** · Group **101** · SDG 9: Industry, Innovation & Infrastructure
-
-An AI system that plans delivery routes for a mixed fleet (refrigerated van, van, truck, bike) across a
-city road network. It minimises distance, time and fuel while respecting vehicle capacity, customer
-time windows and handling rules such as "perishables need a refrigerated van".
+Route planner for deliveries in Greater Noida. Built for the AI course (CCSAI0301, Dr. Mohd. Nazim) as our group project, Group 101, BTech CSE-F, NIET.
 
 **Live demo:** https://utk042.github.io/AI_PBL/
 
-**Current progress: 50% (Review 2).**
+![Route screen](docs/screenshots/route.jpg)
 
-![Route planner](docs/screenshots/route-planner.png)
+## What it does
 
-## How the AI pipeline works
+**Route.** Pick a start, a destination and a vehicle (bike, van, cold van or truck). The app shows the route on the map and lets you choose what matters most:
 
-| Stage | What happens | Syllabus |
+- **Fastest**: least travel time in peak traffic
+- **Shortest**: fewest kilometres
+- **Lowest cost**: fuel plus driver time
+- **Lowest fare**: what the customer would pay
+- **Balanced**: a mix of time, distance and cost
+
+It also shows one or two alternative routes, and explains in plain words why the chosen route was picked: what you gain and lose compared with the other options, what kind of roads it uses, and whether a vehicle rule changed it (for example, trucks are not allowed in narrow market lanes).
+
+**Deliveries.** Plans a day of 12 orders for 4 vehicles from the Knowledge Park II depot. Each order goes to a vehicle that is allowed to carry it, without going over capacity, and arrives inside the customer's time window. For every stop you can open "Why this vehicle?" to see the reason.
+
+**How it works.** Shows the AI techniques behind the app for the course review: the search algorithms compared on the map, the classic problems (Water-Jug, N-Queens, TSP, Missionaries and Cannibals, 8-puzzle), propositional and first-order logic, the semantic network, frames and the expert system.
+
+## The data
+
+26 real places in Greater Noida (sectors, markets, universities, the depot) and 49 roads between them. Place positions and road shapes come from OpenStreetMap; distances are real driving distances from the OSRM routing service. Travel times use OSRM's time multiplied by a peak-traffic factor for the road type. `scripts/build-network.py` rebuilds the data file.
+
+The orders, vehicles, fuel use and fare rates are sample values we chose.
+
+## How the planning works
+
+| Step | What happens | Syllabus |
 |---|---|---|
-| 1. Road graph | Junctions = vertices, roads = weighted edges (distance km, time min) in an adjacency list | Module 1 |
-| 2. Frames + semantic network | Vehicle and delivery knowledge with defaults, demons and is-a inheritance | Module 3 |
-| 3. Expert system | Dispatch Advisor rules decide which vehicle classes may carry each delivery | Module 3 |
-| 4. First-order logic | `Feasible(?v, ?d) <= Permitted & CanCarry & Reachable` derived for all pairs | Module 3 |
-| 5. CSP | Deliveries → vehicles with capacity and time-window constraints (MRV + forward checking) | Module 1 |
-| 6. A* distance matrix | Shortest road path between every pair of stops, admissible straight-line heuristic | Module 1 |
-| 7. TSP with time windows | Orders each vehicle's stops (exact branch-and-bound / Held-Karp, NN + 2-opt) | Module 2 |
+| Road graph | Places are nodes, roads are weighted edges (km, minutes) | Module 1 |
+| Route options | A* search with a different cost for each option; the straight-line distance gives a lower bound so A* stays exact | Module 1 |
+| Alternatives | Yen's algorithm: re-run A* with parts of the best route blocked | Module 1 |
+| Vehicle rules | Expert system decides which vehicle types may carry an order (perishable needs a cold van, bulk needs a truck, trucks can't enter narrow lanes...) | Module 3 |
+| Knowledge | Vehicle types as frames and a semantic network (cold van *is a* van *is a* vehicle); feasibility as first-order logic rules | Module 3 |
+| Assigning orders | Constraint satisfaction: capacity and time windows; every valid plan is checked and the one with least driving is kept | Module 1 |
+| Stop order | Travelling salesperson with time windows for each vehicle | Module 2 |
 
-## Features in the web app
+## Results
 
-- **Route Planner** - multi-vehicle plan on the map, per-vehicle schedules, comparison with BFS/DFS baselines.
-- **Search Lab** - BFS, DFS, Iterative Deepening, Bi-directional, Uniform Cost, Greedy Best-First and A* side by side, with expanded junctions highlighted.
-- **Classic Problems** (Module 2) - Water-Jug, N-Queens (CSP), Travelling Salesperson, Missionaries & Cannibals, 8-puzzle (tiles) - all solved by the same engine.
-- **Knowledge Base** (Module 3) - propositional logic (truth tables, entailment, forward/backward chaining), first-order logic (unification, rule chaining, ∀∃ checks), semantic network and frames.
-- **Expert System** (Module 3) - Dispatch Advisor showing the full architecture: knowledge base, working memory, inference engine (match-resolve-act trace), explanation facility (HOW / WHY) and backward chaining.
+From `npm run benchmark` on the current data:
 
-## Results (sample dataset: 22 junctions, 37 roads, 12 deliveries, 4 vehicles)
+| Plan | Distance | Late deliveries | Over capacity | Rule broken |
+|---|---:|---:|---:|---:|
+| Orders handed out in turn, BFS routes | 136.3 km | 0 | 1 | 6 |
+| Orders handed out in turn, DFS routes | 274.5 km | 2 | 1 | 6 |
+| **Our planner (A* + rules + CSP + TSP)** | **99.5 km** | **0** | **0** | **0** |
 
-Run `npm run benchmark` to reproduce.
+- 27% less driving than the simple plan, with no broken rules.
+- Across all 650 pairs of places, A* always found the best route and checked 45% fewer places than uniform cost search.
 
-| Method | Distance (km) | Fuel (L) | Nodes expanded | Time-window viol. | Capacity viol. | Handling-rule viol. |
-|---|---:|---:|---:|---:|---:|---:|
-| DFS baseline (no KB / CSP) | 372.9 | 42.7 | 1870 | 1 | 1 | 6 |
-| BFS baseline (no KB / CSP) | 131.7 | 14.2 | 1305 | 0 | 1 | 6 |
-| Uniform Cost + KB + CSP + TSP | 91.8 | 11.8 | 1931 | 0 | 0 | 0 |
-| **A\* + KB + CSP + TSP** | **91.8** | **11.8** | **782** | **0** | **0** | **0** |
+## Run it
 
-- The optimised plan is **30% shorter** than the BFS baseline and **75% shorter** than DFS, with zero violations.
-- A* returns the optimal route for **462 / 462** junction pairs while expanding **60% fewer** nodes than Uniform Cost.
-- On the 8-puzzle, A* with Manhattan distance expands ~394 states vs ~20,000 for BFS for the same 18-move optimal solution.
-
-## Run locally
-
-No build step and no dependencies - plain HTML, CSS and JavaScript (ES modules).
+No build step. Any static file server works:
 
 ```bash
 git clone https://github.com/utk042/AI_PBL.git
 cd AI_PBL
-python -m http.server 8080        # or: npm start
+python -m http.server 8080
 # open http://localhost:8080
 ```
 
 ```bash
-npm test             # 20 unit tests (search, CSP, TSP, logic, frames, expert system, planner)
-npm run benchmark    # numbers used in the progress report
+npm test            # 24 tests
+npm run benchmark   # numbers above
 ```
 
-## Project structure
+The map needs an internet connection for the map tiles. Without one, the app draws a plain road outline instead.
+
+## Code layout
 
 ```
-index.html              web app shell
-css/style.css           styles (light and dark theme)
-js/data/network.js      road network, deliveries and fleet (Month 2 dataset)
-js/core/                graph, search algorithms, priority queue, CSP solver, TSP solvers
+index.html, css/        page and styles
+js/data/                roads.js (generated from OpenStreetMap), orders and vehicles
+js/core/                graph, search algorithms, CSP, TSP, route options
+js/kr/                  logic, semantic network, frames, expert system and its rules
 js/problems/            Water-Jug, N-Queens, Missionaries-Cannibals, 8-puzzle
-js/kr/                  propositional logic, FOL, semantic network, frames, expert system + rules
-js/planner.js           integrated planning pipeline and baseline
-js/ui/                  views for each tab
-tests/run-tests.js      unit tests
-scripts/benchmark.js    benchmark script
-docs/                   progress notes and screenshots
+js/planner.js           delivery planning
+js/ui/                  screens
+tests/, scripts/        tests, benchmark, data builder
 ```
 
 ## Progress
 
-| Review | Progress | Scope |
+| Review | Progress | Covered |
 |---|---|---|
-| Review 1 (Month 1) | 30% | Problem understanding, requirements, Module 1 & 2 concept study, literature review |
-| **Review 2 (Month 2)** | **50%** | Working prototype: search, CSP, TSP, Module 2 problems, Module 3 knowledge representation and expert system |
-| Final review | 100% | Module 4 statistical reasoning, real map data, dynamic re-routing, final benchmarking and report |
+| Review 1 | 30% | Problem study, Modules 1 and 2 concepts, literature |
+| **Review 2** | **50%** | Working app: search, CSP, TSP, Module 2 problems, Module 3 knowledge base and expert system |
+| Final | 100% | Module 4 (Bayesian traffic model, fuzzy urgency, certainty factors), bigger network, re-routing, final report |
 
-See [docs/PROGRESS.md](docs/PROGRESS.md) for the detailed plan.
+## Team
 
-## Team - Group 101
-
-| Member | Roll No. | Month 2 work |
+| Name | Roll no. | Worked on |
 |---|---|---|
-| Utkarsh Raj Shukla | 2501330100398 | Road graph, uninformed search, Water-Jug & Missionaries-Cannibals, integration, repository |
-| Vivek Kumar | 2501330100414 | A* / Greedy, heuristics, 8-puzzle, TSP solvers |
-| Vishal Gupta | 2501330100411 | CSP solver, N-Queens, propositional & first-order logic knowledge base |
-| Yash Srivastava | 2501330100422 | Multi-vehicle extension, semantic network & frames, benchmarking |
-| Nishant Kumar Mahto | 0261DCS009 | UI & route visualisation, expert-system interface |
+| Utkarsh Raj Shukla | 2501330100398 | Road graph, uninformed search, Water-Jug, Missionaries-Cannibals, integration |
+| Vivek Kumar | 2501330100414 | A*, greedy search, heuristics, 8-puzzle, TSP |
+| Vishal Gupta | 2501330100411 | CSP solver, N-Queens, propositional and first-order logic |
+| Yash Srivastava | 2501330100422 | Multi-vehicle planning, semantic network, frames, benchmarks |
+| Nishant Kumar Mahto | 0261DCS009 | Interface, map, expert-system screen |
 
 ## References
 
-1. Russell, S., & Norvig, P. *Artificial Intelligence: A Modern Approach* (4th ed.). Pearson.
-2. Rich, E., Knight, K., & Nair, S. B. *Artificial Intelligence* (3rd ed.). McGraw Hill.
-3. Liu, X., Chen, Y.-L., Por, L. Y., & Ku, C. S. (2023). A systematic literature review of vehicle routing problems with time windows. *Sustainability*, 15(15), 12004. https://doi.org/10.3390/su151512004
-4. Zhou, F., Lischka, A., Kulcsár, B., Wu, J., Chehreghani, M. H., & Laporte, G. (2025). Learning for routing: A guided review of recent developments and future directions. *Transportation Research Part E*, 202, 104278. https://doi.org/10.1016/j.tre.2025.104278
+1. Russell, S., & Norvig, P. *Artificial Intelligence: A Modern Approach*, 4th ed.
+2. Rich, E., Knight, K., & Nair, S. B. *Artificial Intelligence*, 3rd ed.
+3. Yen, J. Y. (1971). Finding the k shortest loopless paths in a network. *Management Science*, 17(11), 712–716.
+4. Liu, X., Chen, Y.-L., Por, L. Y., & Ku, C. S. (2023). A systematic literature review of vehicle routing problems with time windows. *Sustainability*, 15(15), 12004.
+5. Zhou, F., et al. (2025). Learning for routing: A guided review of recent developments and future directions. *Transportation Research Part E*, 202, 104278.
+
+Map data © OpenStreetMap contributors.
