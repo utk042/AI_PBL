@@ -1,6 +1,6 @@
 # Logistics Route Optimization System
 
-Route planner for deliveries in Greater Noida. Built for the AI course (CCSAI0301, Dr. Mohd. Nazim) as our group project, Group 101, BTech CSE-F, NIET.
+Route planner for deliveries in Greater Noida. AI course project (CCSAI0301), Group 101, BTech CSE-F, NIET Greater Noida.
 
 **Live demo:** https://utk042.github.io/AI_PBL/
 
@@ -16,7 +16,7 @@ Route planner for deliveries in Greater Noida. Built for the AI course (CCSAI030
 - **Lowest fare**: what the customer would pay
 - **Balanced**: a mix of time, distance and cost
 
-It also shows one or two alternative routes, and explains in plain words why the chosen route was picked: what you gain and lose compared with the other options, what kind of roads it uses, and whether a vehicle rule changed it (for example, trucks are not allowed in narrow market lanes).
+It also shows alternative routes and says why a route was picked: how it compares with the other options, what roads it uses, and whether a vehicle rule changed it (trucks are not allowed in narrow market lanes).
 
 **Deliveries.** Plans a day of 12 orders for 4 vehicles from the Knowledge Park II depot. Each order goes to a vehicle that is allowed to carry it, without going over capacity, and arrives inside the customer's time window. For every stop you can open "Why this vehicle?" to see the reason.
 
@@ -104,10 +104,8 @@ tests/, scripts/        tests, benchmark, data builder
 
 ## References
 
-1. Russell, S., & Norvig, P. *Artificial Intelligence: A Modern Approach*, 4th ed.
-2. Rich, E., Knight, K., & Nair, S. B. *Artificial Intelligence*, 3rd ed.
-3. Yen, J. Y. (1971). Finding the k shortest loopless paths in a network. *Management Science*, 17(11), 712–716.
-4. Liu, X., Chen, Y.-L., Por, L. Y., & Ku, C. S. (2023). A systematic literature review of vehicle routing problems with time windows. *Sustainability*, 15(15), 12004.
-5. Zhou, F., et al. (2025). Learning for routing: A guided review of recent developments and future directions. *Transportation Research Part E*, 202, 104278.
+1. Yen, J. Y. (1971). Finding the k shortest loopless paths in a network. *Management Science*, 17(11), 712–716.
+2. Liu, X., Chen, Y.-L., Por, L. Y., & Ku, C. S. (2023). A systematic literature review of vehicle routing problems with time windows. *Sustainability*, 15(15), 12004.
+3. Zhou, F., et al. (2025). Learning for routing: A guided review of recent developments and future directions. *Transportation Research Part E*, 202, 104278.
 
 Map data © OpenStreetMap contributors.

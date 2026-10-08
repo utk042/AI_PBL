@@ -139,7 +139,7 @@ export function findRouteOptions(graph, net, frames, { from, to, vehicle }) {
   const blocked = blockedPlaces(graph, net, vehicle);
   for (const id of [from, to]) {
     if (blocked.has(id)) {
-      return { error: `A ${label(vehicle)} cannot enter ${graph.node(id).name}: the lanes there are too narrow. Choose a smaller vehicle.` };
+      return { error: `${label(vehicle)[0].toUpperCase()}${label(vehicle).slice(1)}s can't enter ${graph.node(id).name} (narrow lanes). Pick a smaller vehicle.` };
     }
   }
 
@@ -216,11 +216,11 @@ export function explainRoute(graph, found, criterion) {
     const f = found.options.fastest.metrics;
     const s = found.options.shortest.metrics;
     const c = found.options.cheapest.metrics;
-    lines.push(`It is a compromise: ${pct(m.time, f.time)} slower than the fastest route, ${pct(m.distance, s.distance)} longer than the shortest and ${pct(m.cost, c.cost)} more expensive than the cheapest.`);
+    lines.push(`A mix of time, distance and cost: ${pct(m.time, f.time)} slower than the fastest, ${pct(m.distance, s.distance)} longer than the shortest, ${pct(m.cost, c.cost)} costlier than the cheapest.`);
   } else if (!others.length) {
-    lines.push('It is the fastest, the shortest and the cheapest route at the same time, so there is no trade-off.');
+    lines.push('Fastest, shortest and cheapest at the same time.');
   } else {
-    lines.push(`No other route has a lower ${crit.metric === 'time' ? 'travel time' : crit.metric === 'fare' ? 'fare' : crit.metric}.`);
+    lines.push({ time: 'Quickest route.', distance: 'Shortest route.', cost: 'Cheapest to run.', fare: 'Lowest fare for the customer.' }[crit.metric]);
   }
 
   // 2. Trade-off against the other options.
@@ -242,16 +242,16 @@ export function explainRoute(graph, found, criterion) {
   for (const e of graph.pathEdges(o.path)) byType[e.type] = (byType[e.type] || 0) + e.distance;
   const total = m.distance || 1;
   const mix = Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([t, d]) => `${Math.round((d / total) * 100)}% ${t === 'main' ? 'main roads' : t === 'arterial' ? 'city roads' : 'local roads'}`);
-  if (mix.length) lines.push(`Road mix: ${mix.join(', ')}. Average speed ${Math.round((m.distance / m.time) * 60)} km/h in peak traffic.`);
+  if (mix.length) lines.push(`Roads: ${mix.join(', ')}. Average speed ${Math.round((m.distance / m.time) * 60)} km/h at peak time.`);
 
   // 4. Cost structure for this vehicle (why cheapest differs from fastest/shortest).
   if (criterion === 'cheapest') {
     const fuel = m.cost - m.time * DRIVER_RATE;
-    lines.push(`Running cost = fuel ${fmtRs(fuel)} + driver time ${fmtRs(m.time * DRIVER_RATE)}. For this vehicle ${fuel > m.time * DRIVER_RATE ? 'fuel is the bigger part, so shorter roads matter most' : 'driver time is the bigger part, so quicker roads matter most'}.`);
+    lines.push(`Running cost: fuel ${fmtRs(fuel)} + driver ${fmtRs(m.time * DRIVER_RATE)}.`);
   }
   if (criterion === 'fare') {
     const p = found.profile;
-    lines.push(`Fare = ₹${p.baseFare} base + ₹${p.farePerKm}/km + ₹${p.farePerMin}/min for this vehicle.`);
+    lines.push(`Fare: ₹${p.baseFare} + ₹${p.farePerKm} per km + ₹${p.farePerMin} per min.`);
   }
 
   // 5. Access rules from the knowledge base.
@@ -259,12 +259,12 @@ export function explainRoute(graph, found, criterion) {
   if (freePath && freePath.join() !== o.path.join()) {
     const avoided = freePath.filter((id) => found.blocked.has(id)).map((id) => graph.node(id).name);
     if (avoided.length) {
-      lines.push(`A ${label(found.vehicle)} is not allowed in ${avoided.join(' and ')} (narrow lanes), so the route goes around it.`);
+      lines.push(`Goes around ${avoided.join(' and ')}: ${label(found.vehicle)}s are not allowed in the narrow lanes there.`);
     }
   }
 
   // 6. How it was found.
-  lines.push(`Found with A* search, which checked ${o.expanded} of ${found.totalPlaces} places. A search without a guide checks ${o.uninformedExpanded}. A* is guided by the straight-line distance to the destination, which is never more than the real road distance, so the route it returns is guaranteed to be the best one.`);
+  lines.push(`A* search checked ${o.expanded} of ${found.totalPlaces} places (uniform cost search would check ${o.uninformedExpanded}).`);
   return lines;
 }
 
@@ -301,14 +301,13 @@ export function explainAlternative(graph, found, route, criterion) {
   if (route.best.length) {
     lines.push(`This is the ${route.best.map((k) => CRITERIA[k].label.toLowerCase()).join(' and ')} route.`);
   } else {
-    lines.push('This is an alternative way to go, useful if a road on the main route is blocked.');
+    lines.push('Another way to go.');
   }
   if (parts.length) lines.push(`Compared with the ${CRITERIA[criterion].label.toLowerCase()} route it is ${parts.join(', ')}.`);
   const viaA = new Set(route.path.slice(1, -1));
   const different = best.path.slice(1, -1).filter((id) => !viaA.has(id)).map((id) => graph.node(id).name);
   const own = route.path.slice(1, -1).filter((id) => !best.path.includes(id)).map((id) => graph.node(id).name);
   if (own.length) lines.push(`It goes through ${own.join(', ')}${different.length ? ` instead of ${different.join(', ')}` : ''}.`);
-  if (!route.best.length) lines.push("Found with Yen's algorithm, which repeats A* while blocking parts of the best route to find the next-best routes.");
   return lines;
 }
 

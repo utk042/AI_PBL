@@ -12,7 +12,7 @@ const DONE = [
   ['Water-Jug, N-Queens, TSP, Missionaries-Cannibals and 8-puzzle on the same search engine', 'Module 2'],
   ['Propositional and first-order logic rules for vehicle feasibility', 'Module 3'],
   ['Semantic network and frames for vehicles and deliveries', 'Module 3'],
-  ['Expert system that decides which vehicle may carry each order, with explanations', 'Module 3'],
+  ['Expert system that decides which vehicle can carry each order', 'Module 3'],
   ['Route options (fastest, shortest, lowest cost, lowest fare, balanced) and alternatives', 'Integration'],
   ['Multi-vehicle delivery planning on a real map', 'Integration'],
 ];
@@ -35,9 +35,8 @@ function status() {
   const pct = 50;
   return h('div', { class: 'doc' },
     h('h2', {}, 'Project status'),
-    h('p', {}, 'Logistics Route Optimization System · AI PBL, Group 101 · CCSAI0301 · Dr. Mohd. Nazim'),
+    h('p', {}, 'Logistics Route Optimization System · AI PBL, Group 101 · CCSAI0301'),
     h('div', { class: 'progress-row' }, h('div', { class: 'progress' }, h('div', { style: `width:${pct}%` })), h('b', {}, `${pct}%`)),
-    h('p', { class: 'muted' }, 'Review 1 (30%): problem study. Review 2 (50%): working prototype covering Modules 1-3. Final review: Module 4 and final integration.'),
     h('div', { class: 'cols' },
       h('div', {}, h('h3', {}, 'Done'), h('ul', { class: 'check' }, DONE.map(([t, m]) => h('li', { class: 'done' }, t, h('span', { class: 'mod' }, m))))),
       h('div', {}, h('h3', {}, 'Next'), h('ul', { class: 'check' }, TODO.map(([t, m]) => h('li', {}, t, h('span', { class: 'mod' }, m)))))),
@@ -54,7 +53,7 @@ function searchLab(world) {
   const mapEl = h('div', { class: 'map map-small' });
   const wrap = h('div', { class: 'doc' },
     h('h2', {}, 'Search algorithms'),
-    h('p', {}, 'The same trip solved by seven search algorithms. Click a row to see its route and the places it had to check.'),
+    h('p', {}, 'One trip, seven search algorithms. Click a row to see its route and the places it checked.'),
     h('div', { class: 'controls' },
       field('From', select(places, st.start, (v) => { st.start = v; run(); })),
       field('To', select(places, st.goal, (v) => { st.goal = v; run(); })),
@@ -84,7 +83,7 @@ function searchLab(world) {
       table(['Algorithm', st.weight === 'distance' ? 'Km' : 'Min', 'Places checked', 'Best?'],
         rows.map((r) => [r.name, fmt(r.m[st.weight]), r.res.expanded, Math.abs(r.m[st.weight] - best) < 1e-6 ? 'Yes' : 'No']),
         { numeric: [1, 2], onRowClick: (i, tr) => { st.algo = rows[i].key; tr.parentElement.querySelectorAll('tr').forEach((x) => x.classList.remove('sel')); tr.classList.add('sel'); show(); } }),
-      h('p', { class: 'muted small' }, 'A* and uniform cost always find the best route. A* checks fewer places because it uses the straight-line distance to the destination as a guide. That guess is never more than the real road distance, so it never misleads the search.'),
+      h('p', { class: 'muted small' }, 'A* and uniform cost always find the best route. A* checks fewer places because it uses the straight-line distance to the destination as a guide.'),
     );
     show();
   }
@@ -104,7 +103,7 @@ export function renderLearn(root, ctx) {
   const holder = h('div');
   const show = (id) => { cache[id] ||= panes[id](); holder.replaceChildren(cache[id]); };
   root.append(h('div', { class: 'page' },
-    h('p', { class: 'intro' }, 'The AI techniques behind the planner, for the course review.'),
+    h('p', { class: 'intro' }, 'AI techniques used in this project.'),
     subtabs([['status', 'Status'], ['search', 'Search'], ['problems', 'Classic problems'], ['kb', 'Logic & knowledge'], ['expert', 'Expert system']], show),
     holder));
   show('status');

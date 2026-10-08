@@ -68,7 +68,7 @@ export function renderDeliveries(root, { world }) {
           h('div', {}, h('b', {}, `${sum.distance.toFixed(1)} km`), h('span', {}, 'total driving')),
           h('div', {}, h('b', {}, formatClock(sum.makespan)), h('span', {}, 'last vehicle back')),
           h('div', {}, h('b', {}, `${sum.fuel.toFixed(1)} L`), h('span', {}, 'fuel'))),
-        h('p', { class: 'muted small' }, `${saved}% less driving than sending orders out one by one to each vehicle in turn (${baseline.summary.distance.toFixed(1)} km, with ${baseline.summary.capacityViolations + baseline.summary.ruleViolations} broken rules).`)),
+        h('p', { class: 'muted small' }, `${saved}% less driving than handing out orders in turn (${baseline.summary.distance.toFixed(1)} km).`)),
       ...vehicleCards,
       h('details', { class: 'orders' }, h('summary', {}, 'All orders'),
         h('div', { class: 'table-wrap' }, h('table', {},

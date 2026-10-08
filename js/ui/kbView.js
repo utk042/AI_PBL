@@ -80,7 +80,7 @@ function firstOrder(plan) {
   const run = () => {
     try {
       const res = kb.query(q.value);
-      out.replaceChildren(res.length ? h('div', {}, res.map((a) => pill(showAtom(a)))) : h('p', { class: 'muted' }, 'No matching facts (query is false under the KB).'));
+      out.replaceChildren(res.length ? h('div', {}, res.map((a) => pill(showAtom(a)))) : h('p', { class: 'muted' }, 'No matching facts.'));
     } catch (e) {
       out.replaceChildren(h('p', { class: 'err' }, e.message));
     }
@@ -148,8 +148,8 @@ function semanticNet(world) {
   run();
   const nodes = [...net.nodes.keys()].filter((k) => !k.startsWith('D') || k.startsWith('Deliver') || k === 'Depot');
   return h('div', {},
-    card('Semantic network', 'Square boxes are kinds of things, round boxes are real vehicles. A vehicle inherits everything its kind knows.', svg),
-    card('Inheritance query', 'Pick a vehicle and a relation to see the answer and where it was inherited from.',
+    card('Semantic network', 'Square boxes are classes, round boxes are vehicles. A vehicle gets the properties of its class.', svg),
+    card('Inheritance query', 'Pick a node and a relation to see the value and where it comes from.',
       h('div', { class: 'controls' },
         field('Node', select(nodes.map((n) => [n, n]), st.node, (v) => { st.node = v; run(); })),
         field('Relation', select(['can-carry', 'cannot-enter', 'starts-at', 'travels-on', 'served-by', 'located-at', 'connects'].map((r) => [r, r]), st.rel, (v) => { st.rel = v; run(); })),
@@ -175,9 +175,9 @@ function frames(world) {
   run();
   const vehicles = fs.instancesOf('Vehicle');
   return h('div', { class: 'grid halves' },
-    card('Frames', 'Each vehicle and order is a frame with slots. Empty slots take the default from the parent frame.',
+    card('Frames', 'Each vehicle and order is a frame with slots. Empty slots use the default from the parent frame.',
       h('div', { class: 'controls' }, field('Frame', select([...fs.frames.keys()].map((k) => [k, k]), st.frame, (v) => { st.frame = v; run(); }))), out),
-    card('Demons (if-added / if-needed)', 'Set a load: an if-added procedure warns when the vehicle is overloaded, and remaining capacity is worked out when asked (if-needed).',
+    card('Demons (if-added / if-needed)', 'Set a load. The if-added procedure warns when the vehicle is overloaded; remaining capacity is worked out when needed (if-needed).',
       h('div', { class: 'controls' },
         field('Vehicle', select(vehicles.map((v) => [v, v]), vehicles[0], (v) => { st.frame = v; run(); })),
         field('currentLoad (kg)', load),

@@ -209,7 +209,7 @@ test('trucks never pass through narrow-lane markets and get a clear message for 
     for (const route of r.routes) assert.ok(route.path.every((id) => !blocked.has(id)));
   }
   const bad = findRouteOptions(world.graph, world.net, world.frames, { from: 'N0', to: [...blocked][0], vehicle: 'Truck' });
-  assert.match(bad.error, /cannot enter/);
+  assert.match(bad.error, /can't enter/);
 });
 test("Yen's alternatives are loop-free, distinct and in order of cost", () => {
   const w = (e) => e.time;
