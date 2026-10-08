@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Greater Noida Route Planner</title>
+  <meta name="description" content="Find the best route across Greater Noida by time, distance, cost or fare, and plan a day of deliveries for a small fleet.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="#route">Route Planner <span>Greater Noida</span></a>
+    <nav id="tabs" aria-label="Main">
+      <a href="#route" data-view="route">Route</a>
+      <a href="#deliveries" data-view="deliveries">Deliveries</a>
+      <a href="#how" data-view="how">How it works</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="view" id="view-route"></section>
+    <section class="view" id="view-deliveries"></section>
+    <section class="view" id="view-how"></section>
+  </main>
+
+  <noscript><p class="noscript">This page needs JavaScript.</p></noscript>
+  <script type="module" src="js/ui/app.js"></script>
+</body>
+</html>
