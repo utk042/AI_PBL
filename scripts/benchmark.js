@@ -1,6 +1,6 @@
 // Benchmark used for the Review 2 results table: node scripts/benchmark.js
 import { buildWorld, planRoutes, planBaseline } from '../js/planner.js';
-import { NODES } from '../js/data/network.js';
+import { NODES, EDGES, DELIVERIES, VEHICLES } from '../js/data/network.js';
 import { bfs, dfs, iddfs, bidirectional, ucs, greedy, astar } from '../js/core/search.js';
 
 const world = buildWorld();
@@ -23,7 +23,7 @@ const rows = [
   avg(() => planRoutes(world, { algorithm: 'astar' })),
 ];
 
-console.log('\nFleet plan (12 deliveries, 4 vehicles, 22 junctions, 37 roads)\n');
+console.log(`\nFleet plan (${DELIVERIES.length} deliveries, ${VEHICLES.length} vehicles, ${NODES.length} places, ${EDGES.length} roads)\n`);
 console.table(rows.map((r) => ({
   method: r.method,
   'distance km': r.distance,
@@ -34,7 +34,7 @@ console.table(rows.map((r) => ({
   'capacity viol.': r.capacityViolations,
   'rule viol.': r.ruleViolations,
   'ms (avg)': r.timeMs,
-  'csp assign/backtrack': r.csp ? `${r.csp.assignments}/${r.csp.backtracks}` : '-',
+  'plans checked': r.csp ? r.csp.solutionsChecked : '-',
 })));
 
 // Single-route comparison over every ordered pair of junctions.

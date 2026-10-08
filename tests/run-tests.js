@@ -15,6 +15,7 @@ import { buildLogisticsFrames } from '../js/kr/frames.js';
 import { InferenceEngine } from '../js/kr/expertSystem.js';
 import { DISPATCH_RULES } from '../js/kr/dispatchRules.js';
 import { buildWorld, planRoutes, planBaseline } from '../js/planner.js';
+import { findRouteOptions, routeMetrics, edgeMetrics, kShortestPaths, explainRoute, blockedPlaces, CRITERIA } from '../js/core/routeOptions.js';
 
 let passed = 0;
 let failed = 0;
@@ -180,6 +181,49 @@ test('plan beats the BFS and DFS baselines on distance', () => {
   const p = planRoutes(w).summary;
   assert.ok(p.distance < planBaseline(w, { algorithm: 'bfs' }).summary.distance);
   assert.ok(p.distance < planBaseline(w, { algorithm: 'dfs' }).summary.distance);
+});
+
+console.log('Route options');
+const world = buildWorld();
+const ids = [...world.graph.nodes.keys()];
+test('each option is optimal for its own measure (checked against uniform cost search)', () => {
+  for (const vehicle of ['Van', 'Truck', 'Bike']) {
+    for (const [from, to] of [['N0', 'N24'], ['N21', 'N15'], ['N18', 'N10'], ['N20', 'N12']]) {
+      const r = findRouteOptions(world.graph, world.net, world.frames, { from, to, vehicle });
+      for (const [key, c] of Object.entries(CRITERIA)) {
+        if (!c.metric) continue;
+        const prof = r.profile;
+        const p = world.graph.routeProblem(from, to, { weight: (e) => edgeMetrics(e, prof)[c.metric], heuristic: () => 0, blocked: r.blocked });
+        const best = routeMetrics(world.graph, ucs(p).path, prof)[c.metric];
+        assert.ok(r.options[key].metrics[c.metric] <= best + 1e-6, `${vehicle} ${from}-${to} ${key}`);
+      }
+    }
+  }
+});
+test('trucks never pass through narrow-lane markets and get a clear message for one', () => {
+  const blocked = blockedPlaces(world.graph, world.net, 'Truck');
+  assert.ok(blocked.size >= 2);
+  for (const from of ids) for (const to of ['N24', 'N15', 'N21']) {
+    if (from === to || blocked.has(from)) continue;
+    const r = findRouteOptions(world.graph, world.net, world.frames, { from, to, vehicle: 'Truck' });
+    for (const route of r.routes) assert.ok(route.path.every((id) => !blocked.has(id)));
+  }
+  const bad = findRouteOptions(world.graph, world.net, world.frames, { from: 'N0', to: [...blocked][0], vehicle: 'Truck' });
+  assert.match(bad.error, /cannot enter/);
+});
+test("Yen's alternatives are loop-free, distinct and in order of cost", () => {
+  const w = (e) => e.time;
+  const paths = kShortestPaths(world.graph, 'N0', 'N24', { weight: w, heuristic: () => 0 }, 4);
+  assert.equal(paths.length, 4);
+  const costs = paths.map((p) => world.graph.pathEdges(p).reduce((s, e) => s + w(e), 0));
+  for (let i = 1; i < costs.length; i++) assert.ok(costs[i] >= costs[i - 1] - 1e-9);
+  assert.equal(new Set(paths.map((p) => p.join())).size, 4);
+  for (const p of paths) assert.equal(new Set(p).size, p.length);
+});
+test('every route comes with an explanation and a road shape', () => {
+  const r = findRouteOptions(world.graph, world.net, world.frames, { from: 'N19', to: 'N15', vehicle: 'Van' });
+  for (const key of Object.keys(CRITERIA)) assert.ok(explainRoute(world.graph, r, key).length >= 2);
+  for (const route of r.routes) assert.ok(route.geometry.length > route.path.length);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
